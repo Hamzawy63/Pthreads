@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <sys/time.h>
+
 #define ll long long int
 #define MAX 102  ;
 int debug = 0;
@@ -72,8 +73,8 @@ int main(int args, char **argv) {
 #ifdef badoutput
     debug = 1;
 #endif
-    char *mat1_file = "in1";
-    char *mat2_file = "in2";
+    char *mat1_file = "a.txt";
+    char *mat2_file = "a.txt";
     char *output_file = "c.txt";
 
     /*
@@ -107,7 +108,7 @@ int main(int args, char **argv) {
         }
     }
     read_matrix(a, r1, c1);
-    print_mat(a, r1, c1);
+    if (debug)print_mat(a, r1, c1);
 
 
     freopen(mat2_file, "r", stdin);
@@ -117,7 +118,7 @@ int main(int args, char **argv) {
         b[i] = (ll *) malloc(c2 * sizeof(ll));
     }
     read_matrix(b, r2, c2);
-    print_mat(b, r2, c2);
+    if (debug)print_mat(b, r2, c2);
 
     if (debug)
         fprintf(stderr, "READ Completed\n");
@@ -144,6 +145,7 @@ int main(int args, char **argv) {
 
     FILE *output = fopen(output_file, "w");
     gettimeofday(&start, NULL);
+    int threads_created = 0;
 
     pthread_t threads[r3 + 1][c3 + 1];
     struct data data_args[r3 + 1][c3 + 1];
@@ -151,6 +153,7 @@ int main(int args, char **argv) {
         for (int j = 0; j < c3; j++) {
             data_args[i][j].row_number = i;
             data_args[i][j].column_number = j;
+            threads_created++;
             pthread_t element_thread = pthread_create(&threads[i][j], NULL, calculate_one_element,
                                                       &data_args[i][j]);
             if (element_thread) {
@@ -180,6 +183,7 @@ int main(int args, char **argv) {
     gettimeofday(&stop, NULL);
     fprintf(stderr, "When using a thread for each entry ==> Data execution took %lu seconds and %lu microseconds\n",
             stop.tv_sec - start.tv_sec, stop.tv_usec - start.tv_usec);
+    fprintf(stderr, "Threads created = %d\n", threads_created);
 
 
     fprintf(output, "The matrix using thread for each element\n");
@@ -187,8 +191,10 @@ int main(int args, char **argv) {
         for (int j = 0; j < c3; j++) {
             fprintf(output, "%lld ", c[i][j]);
         }
-        fprintf(output , "\n") ;
+        fprintf(output, "\n");
     }
+    threads_created = 0;
+
     /*
      *
      *
@@ -204,10 +210,11 @@ int main(int args, char **argv) {
     gettimeofday(&start, NULL);
     pthread_t row_threads[r3 + 1];
     for (int i = 0; i < r3; i++) {
+        threads_created++;
         pthread_t row_thread = pthread_create(&row_threads[i], NULL, calculate_one_row, (void *) i);
         if (row_thread) {
-            fprintf(stderr , "Problem in making thread to calculate row number %d  \n", i);
-            exit(1) ;
+            fprintf(stderr, "Problem in making thread to calculate row number %d  \n", i);
+            exit(1);
         }
     }
     if (debug) {
@@ -220,14 +227,14 @@ int main(int args, char **argv) {
     gettimeofday(&stop, NULL);
     fprintf(stderr, "When using a thread for each row ==> Data execution took %lu seconds and %lu microseconds \n",
             stop.tv_sec - start.tv_sec, stop.tv_usec - start.tv_usec);
-
+    fprintf(stderr, "threads created = %d \n", threads_created);
 
     fprintf(output, "The matrix using thread for each row\n");
     for (int i = 0; i < r3; i++) {
         for (int j = 0; j < c3; j++) {
             fprintf(output, "%lld ", c[i][j]);
         }
-        fprintf(output , "\n") ;
+        fprintf(output, "\n");
     }
     return 0;
 }
